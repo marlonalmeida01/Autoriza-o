@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Autorização</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .pdf-container {
+            margin-top: 20px;
+        }
+        .employee-form {
+            margin-bottom: 20px;
+        }
+        .employee-list {
+            margin-top: 10px;
+        }
+
+        /* Estilos para a janela modal */
+        .modal {
+            display: none; /* Modal oculto por padrão */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 4px;
+            width: 300px;
+            text-align: center;
+        }
+        .modal button {
+            background-color: red;
+            margin-top: 10px;
+        }
+        .modal button:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Emissão de Autorização</h1>
+
+        <!-- Formulário para cadastro de funcionário -->
+        <div class="employee-form">
+            <h3>Cadastro de Funcionário</h3>
+            <div class="form-group">
+                <label for="novoFuncionario">Nome do Novo Funcionário:</label>
+                <input type="text" id="novoFuncionario" placeholder="Digite o nome do novo funcionário">
+            </div>
+            <div class="form-group">
+                <button onclick="cadastrarFuncionario()">Cadastrar Funcionário</button>
+            </div>
+            <div class="employee-list">
+                <label for="nomeFuncionario">Funcionários Cadastrados:</label>
+                <select id="nomeFuncionario">
+                    <option value="Teste">Teste</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button onclick="abrirModalDeletar()">Deletar Funcionário</button>
+            </div>
+        </div>
+
+        <!-- Formulário de emissão -->
+        <div class="form-group">
+            <label for="dataHora">Data e Hora:</label>
+            <input type="datetime-local" id="dataHora" required>
+        </div>
+
+        <div class="form-group">
+            <label for="tipoAutorizacao">Tipo de Autorização:</label>
+            <select id="tipoAutorizacao" required>
+                <option value="Entrada">Entrada</option>
+                <option value="Saída">Saída</option>
+                <option value="Hora Extra">Hora Extra</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="motivo">Motivo:</label>
+            <textarea id="motivo" rows="4" placeholder="Digite o motivo"></textarea>
+        </div>
+
+        <!-- Botões -->
+        <div class="form-group">
+            <button onclick="gerarPDF()">Imprimir e Sair</button>
+        </div>
+    </div>
+
+    <!-- Modal para deletar funcionário -->
+    <div id="modalDeletar" class="modal">
+        <div class="modal-content">
+            <h3>Confirmação de Deleção</h3>
+            <p>Para deletar o funcionário, por favor insira a data de rescisão do contrato.</p>
+            <input type="date" id="dataRescisao" required>
+            <br>
+            <button onclick="deletarFuncionario()">Deletar Funcionário</button>
+            <button onclick="fecharModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        let funcionarios = ['Teste']; // Lista de funcionários cadastrados
+
+        // Função para cadastrar um novo funcionário
+        function cadastrarFuncionario() {
+            const nomeFuncionario = document.getElementById('novoFuncionario').value.trim();
+            if (nomeFuncionario !== '') {
+                // Adicionar o novo funcionário na lista
+                funcionarios.push(nomeFuncionario);
+                atualizarListaFuncionarios();
+                document.getElementById('novoFuncionario').value = ''; // Limpar campo
+            } else {
+                alert('Por favor, insira um nome válido para o funcionário.');
+            }
+        }
+
+        // Função para atualizar o dropdown com os funcionários cadastrados
+        function atualizarListaFuncionarios() {
+            const selectFuncionario = document.getElementById('nomeFuncionario');
+            selectFuncionario.innerHTML = ''; // Limpar opções existentes
+            funcionarios.forEach(funcionario => {
+                const option = document.createElement('option');
+                option.value = funcionario;
+                option.textContent = funcionario;
+                selectFuncionario.appendChild(option);
+            });
+        }
+
+        // Função para abrir o modal de exclusão
+        function abrirModalDeletar() {
+            const nomeFuncionarioSelecionado = document.getElementById('nomeFuncionario').value;
+            if (nomeFuncionarioSelecionado !== '') {
+                document.getElementById('modalDeletar').style.display = 'flex'; // Exibir modal
+            } else {
+                alert('Selecione um funcionário para deletar.');
+            }
+        }
+
+        // Função para deletar o funcionário
+        function deletarFuncionario() {
+            const nomeFuncionarioSelecionado = document.getElementById('nomeFuncionario').value;
+            const dataRescisao = document.getElementById('dataRescisao').value;
+
+            if (dataRescisao === '') {
+                alert('Por favor, insira a data de rescisão.');
+                return;
+            }
+
+            // Remover o funcionário da lista
+            funcionarios = funcionarios.filter(funcionario => funcionario !== nomeFuncionarioSelecionado);
+            atualizarListaFuncionarios();
+
+            // Fechar o modal
+            fecharModal();
+            alert(`Funcionário ${nomeFuncionarioSelecionado} foi deletado com sucesso.`);
+        }
+
+        // Função para fechar o modal
+        function fecharModal() {
+            document.getElementById('modalDeletar').style.display = 'none';
+            document.getElementById('dataRescisao').value = ''; // Limpar campo
+        }
+
+        // Função para gerar o PDF
+        function gerarPDF() {
+            const { jsPDF } = window.jspdf;
+
+            // Dados do formulário
+            const nomeFuncionario = document.getElementById('nomeFuncionario').value;
+            const dataHora = document.getElementById('dataHora').value;
+            const tipoAutorizacao = document.getElementById('tipoAutorizacao').value;
+            const motivo = document.getElementById('motivo').value;
+
+            // Criação do PDF
+            const doc = new jsPDF();
+
+            // Adicionar logo (substitua a URL com o caminho da sua logo)
+            //doc.addImage('"autorização\galvanica-guarany.png"', 'PNG', 10, 10, 50, 25);
+
+            // Título
+            doc.setFontSize(18);
+            doc.text(tipoAutorizacao, 105, 20, { align: "center" });
+
+            // Dados
+            doc.setFontSize(12);
+            doc.text(`Nome: ${nomeFuncionario}`, 20, 40);
+            doc.text(`Data e Hora: ${dataHora}`, 20, 50);
+            doc.text(`Motivo: ${motivo}`, 20, 60);
+
+            // Linha de assinatura ajustada para abaixo das informações
+            doc.text("Assinatura do Funcionário: ____________________________", 20, 80);
+            doc.text("Assinatura do Operador: ____________________________", 20, 90);
+
+            // Controle de versão no rodapé
+            doc.setFontSize(10);
+            doc.text("Versão: 1.0", 200, 100, { align: "right" });
+            // Linha de divisão ao meio
+            doc.setLineWidth(0.5);
+            doc.line(10, 148.5, 200, 148.5); // Linha horizontal na metade exata da folha
+
+            // Gerar o PDF
+            doc.save('autorizacao.pdf');
+        }
+    </script>
+
+</body>
+</html>
